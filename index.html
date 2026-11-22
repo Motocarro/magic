@@ -73,7 +73,7 @@ function openD(r){R=r;const s=r.scheda,a=s.auto||{};const rich=t=>E(t).replace(/
  <h3>Capi d'accusa</h3><div id="acc">${r.accuse.map((c,i)=>`<div class="acc" data-i="${i}"><span>${E(c.titolo)}</span><u></u></div>`).join('')}</div>
  <h3>Dati d'intelligence</h3><div class="row"><input id="ic" placeholder="CODICE" autocomplete="off"><button id="ib">Sblocca</button></div><div id="fr"></div>`;
  d.querySelectorAll('input[data-i]').forEach(i=>i.onchange=()=>cens(+i.dataset.i,i.value));
- $('#ib').onclick=()=>unlock($('#ic').value);$('#ic').onkeydown=e=>e.key=='Enter'&&unlock(e.target.value);
+ $('#ib').onclick=()=>unlock($('#ic').value);$('#ic').onkeydown=e=>{if(e.key=='Enter')unlock(e.target.value)};
  $('#acc').onclick=e=>{const a=e.target.closest('.acc');if(a)acc(+a.dataset.i)};
  Object.entries(S.ce).forEach(([i,v])=>cens(+i,v,1));if(S.c2)unlock(S.c2,1)}
 async function cens(i,v,q){const c=R.censurati[i],t=norm(v);if(!t)return;
@@ -92,7 +92,7 @@ async function acc(i){if(!I)return toast('Troppo facile. Nessuno ti ha dato il p
  o.querySelector('button').onclick=()=>{o.remove();URL.revokeObjectURL(src)};document.body.append(o)}
 function fix(){const f=$('#fr');f.innerHTML='<h3>LINK CORROTTO · ripara i 4 frammenti</h3>'+I.frammenti.map((x,i)=>`<div class="card" id="f${i}"><h4>Frammento ${i+1} · ${E(x.tipo)}</h4><p>${E(x.testo)}</p><div class="row"><input data-f="${i}" autocomplete="off"><button data-f="${i}">Ripara</button></div></div>`).join('');
  f.querySelectorAll('button').forEach(b=>b.onclick=()=>chk(+b.dataset.f,f.querySelector(`input[data-f="${b.dataset.f}"]`).value));
- f.querySelectorAll('input').forEach(n=>n.onkeydown=e=>e.key=='Enter'&&chk(+n.dataset.f,n.value));
+ f.querySelectorAll('input').forEach(n=>n.onkeydown=e=>{if(e.key=='Enter')chk(+n.dataset.f,n.value)});
  Object.entries(S.fr).forEach(([i,v])=>chk(+i,v,1));f.scrollIntoView({behavior:'smooth'})}
 async function chk(i,v,q){if(!norm(v))return;if(await hash(v)!==I.frammenti[i].h){if(!q)toast('Frammento non valido.');return}
  S.fr[i]=v;save();okF[i]=1;const c=$('#f'+i);c.classList.add('done');c.querySelector('.row').innerHTML='<span class="ok">RIPARATO</span>';
@@ -102,7 +102,7 @@ async function end(){const x=await dec(I.finale,I.frammenti.map((_,i)=>norm(S.fr
  setTimeout(()=>o.querySelector('.bar div').style.width='100%',50);
  setTimeout(()=>{o.innerHTML=`<div><div class="big">ACCESSO CONSENTITO</div><p>Prova n. 1 pronta alla visione.</p><button id="go">Riproduci prova</button><p style="color:var(--c)">${E(x.ps)}</p></div>`;
   $('#go').onclick=()=>window.open(x.url,'_blank','noopener')},3300)}
-$('#gb').onclick=()=>openGate($('#gi').value);$('#gi').onkeydown=e=>e.key=='Enter'&&openGate(e.target.value);
+$('#gb').onclick=()=>openGate($('#gi').value);$('#gi').onkeydown=e=>{if(e.key=='Enter')openGate(e.target.value)};
 stars();fetch('pacchetto.json').then(r=>r.json()).then(async p=>{P=p;try{S={...S,...JSON.parse(localStorage.getItem('fasc')||'{}')}}catch(e){}
  if(S.c1)await openGate(S.c1,1)}).catch(()=>{$('#err').textContent='Impossibile caricare i dati: apri la pagina da un server (https o localhost), non dal file.'});
 </script>
