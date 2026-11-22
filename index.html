@@ -1,0 +1,105 @@
+<!doctype html><html lang="it"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fascicolo</title>
+<!-- Ciao curioso. Tutto qui dentro è cifrato (AES-256-GCM, chiave PBKDF2): niente link o risposte in chiaro.
+     I dati si aprono a cascata con i codici del gioco. Firmato: motocarro.   FLAG{motocarro_was_here} -->
+<style>
+:root{--p:#ff2d95;--c:#18e0ff;--bg:#0a0614;--ok:#3dff8b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#2a0a3d,var(--bg) 60%);color:#fff;font:1.25rem/1.5 system-ui,sans-serif;min-height:100vh;padding:5.5rem 1rem 3rem}
+h2,h3,h4,.big{font-family:Impact,'Arial Black',sans-serif;font-weight:400;letter-spacing:.04em}
+header{position:fixed;inset:0 0 auto;padding:.6rem 1rem;background:#000c;display:flex;justify-content:space-between;align-items:center;z-index:5;border-bottom:2px solid var(--p)}
+#st i{font-style:normal;font-size:2rem;color:#333;margin-left:.2rem}#st i.on{color:var(--c);text-shadow:0 0 12px var(--c);animation:bl .6s infinite alternate}
+@keyframes bl{to{opacity:.4}}
+main{max-width:1000px;margin:auto}.wanted{font-size:clamp(2rem,5vw,3.4rem);color:var(--p);text-shadow:0 0 18px var(--p);margin:0 0 1rem}
+h3{color:var(--c);font-size:1.8rem;margin:2rem 0 .5rem;border-bottom:1px solid #fff3}
+.top{display:flex;gap:1.5rem;flex-wrap:wrap}.mug{width:240px;max-height:300px;object-fit:cover;border:4px solid #fff;transform:rotate(-2deg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.3rem 1.5rem;flex:1}.grid p{margin:.2rem 0}
+b{display:block;font-size:.9rem;color:var(--c);font-weight:600}
+input{font:inherit;font-size:1.6rem;padding:.4rem .7rem;background:#000;color:#fff;border:2px solid var(--p);border-radius:4px;max-width:100%}
+input:focus{outline:3px solid var(--c)}
+button{font:1.4rem Impact,sans-serif;letter-spacing:.05em;padding:.5rem 1.2rem;background:var(--p);color:#fff;border:0;border-radius:4px;cursor:pointer}button:hover{background:var(--c);color:#000}
+.row{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin:.4rem 0}.row b{min-width:15rem;margin:0}
+.ok{background:#000;padding:.3rem .7rem;color:var(--ok);font-size:1.6rem;letter-spacing:.15em;border:2px solid var(--ok)}mark{background:var(--ok);color:#000;padding:0 .1em}
+#slots{font:2.2rem Impact,sans-serif;letter-spacing:.4em;color:var(--c);margin:.6rem 0}
+.acc{display:flex;gap:1rem;align-items:center;background:#ffffff10;margin:.4rem 0;padding:.7rem 1rem;border-left:5px solid var(--p);cursor:pointer}
+.acc u{flex:1;height:1.2rem;background:#000;text-decoration:none}.acc.open u{background:none}.acc.open u::after{content:"▶ apri file";color:var(--ok)}
+.card{border:2px solid #fff4;padding:.6rem 1rem;margin:.7rem 0;background:#0008}.card.done{border-color:var(--ok)}.card p{white-space:pre-line;margin:.3rem 0}
+h4{margin:0;color:var(--p);font-size:1.4rem}
+.ov{position:fixed;inset:0;background:#000e;display:grid;place-items:center;z-index:9;padding:1rem;text-align:center;overflow:auto}
+.ov img,.ov video{max-width:92vw;max-height:78vh}.ov .big{font-size:clamp(2.4rem,8vw,5rem);color:var(--ok);margin:.5rem}
+#bs{animation:sir .35s infinite alternate}@keyframes sir{from{background:#a00}to{background:#00a}}#bs .big{font-size:clamp(4rem,16vw,11rem);color:#fff;text-shadow:0 0 30px #fff}
+.bar{width:min(500px,80vw);height:18px;border:2px solid var(--c);margin:1rem auto}.bar div{height:100%;width:0;background:var(--c);transition:width 3s linear}
+#msg{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,200%);background:var(--p);padding:.8rem 1.6rem;border-radius:6px;transition:transform .25s;z-index:20;max-width:92vw}#msg.s{transform:translate(-50%,0)}
+.rd,.ci{display:inline-block;background:#000;height:1.15em;vertical-align:text-bottom;border-radius:2px}.rd{cursor:not-allowed}.ci{font-size:1em;padding:0 .25em;border:0;color:#fff}.ci:focus{outline:2px solid var(--c)}p .ok{font-size:1.1rem;padding:0 .3em;letter-spacing:.1em}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<header><span class="big" style="font-size:1.5rem">VICE CITY P.D.</span><span id="st"></span></header>
+<main>
+<section id="gate"><h2 class="wanted">FASCICOLO RISERVATO</h2>
+<p>Sergente Cross, il fascicolo è sigillato. Serve il codice della prova.<br><em style="color:var(--c)">«Il sergente Cross non si lascia scappare alcun dettaglio: indaga sulla scena del ritrovamento.»</em></p>
+<div class="row"><input id="gi" placeholder="CODICE PROVA" autocomplete="off" autofocus><button id="gb">Apri</button></div><p id="err" style="color:#ff6b6b"></p></section>
+<section id="dos" hidden></section></main><div id="msg"></div>
+<script>
+const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const gate=s=>norm(s).replace(/^(prova)?n?(?=\d)/,'');
+const EASY=['0000','1234','12345','cross','magic','motocarro','password','16','admin','formula1','f1','harrypotter','prova'];
+const u8=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+async function dec(b,p){try{const k0=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveKey']);
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:u8(b.s),iterations:200000,hash:'SHA-256'},k0,{name:'AES-GCM',length:256},false,['decrypt']);
+ return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u8(b.i)},k,u8(b.c))))}catch(e){return null}}
+async function hash(s){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('v1:'+norm(s)));return[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+let P,R,I,W=0,S={c1:'',c2:'',ce:{},fr:{}},L=[],okF=[];
+const save=()=>{try{localStorage.setItem('fasc',JSON.stringify(S))}catch(e){}};
+const toast=t=>{const m=$('#msg');m.textContent=t;m.classList.add('s');clearTimeout(m.t);m.t=setTimeout(()=>m.classList.remove('s'),3200)};
+const stars=()=>$('#st').innerHTML=[...Array(6)].map((_,i)=>`<i class="${i<W?'on':''}">★</i>`).join('');
+function siren(){try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);g.gain.value=.12;o.start();
+ for(let t=0;t<6;t++)o.frequency.setValueAtTime(t%2?900:600,a.currentTime+t*.4);o.stop(a.currentTime+2.4)}catch(e){}}
+function addW(n){W=Math.min(6,W+n);stars();if(W>=6){siren();const o=document.createElement('div');o.className='ov';o.id='bs';
+ o.innerHTML='<div><div class="big">BUSTED</div><button>Riprova</button></div>';o.querySelector('button').onclick=()=>{W=0;stars();o.remove()};document.body.append(o)}}
+async function openGate(v,quiet){
+ const n=norm(v);if(!n)return;
+ if(!quiet&&EASY.includes(n)){toast('«Troppo facile, collega.»');return addW(2)}
+ const r=await dec(P,gate(v));if(!r){if(!quiet){$('#err').textContent='Codice non valido.';addW(1)}return false}
+ S.c1=v;save();openD(r);return true}
+const F=[['Nome','nome'],['Cognome','cognome'],['Soprannome','soprannome'],['Nascita','nascita'],['Altezza','altezza'],['Indirizzo','indirizzo'],['Alias','alias'],['Segni particolari','segni'],['Patente','patente'],['Precedenti','precedenti'],['Modus operandi','modus'],['Ultimo avvistamento','avvistamento'],['Pericolosità','pericolosita'],['Ricompensa','ricompensa']];
+function openD(r){R=r;const s=r.scheda,a=s.auto||{};const rich=t=>E(t).replace(/⟦(\d+)⟧/g,(_,n)=>`<span class="rd" style="width:${n}ch"></span>`).replace(/\{\{(\d+)\}\}/g,(_,n)=>r.censurati[n-1]?`<input class="ci" data-i="${n-1}" style="width:${r.censurati[n-1].len+2}ch" autocomplete="off">`:'');const used=new Set([...JSON.stringify(s).matchAll(/\{\{(\d+)\}\}/g)].map(m=>m[1]-1)),rest=r.censurati.map((c,i)=>i).filter(i=>!used.has(i));$('#gate').hidden=1;const d=$('#dos');d.hidden=0;
+ d.innerHTML=`<h2 class="wanted">RICERCATO DALLA POLIZIA DI VICE CITY</h2>
+ <div class="top">${s.foto?`<img class="mug" src="${s.foto}">`:''}<div class="grid">${F.map(([l,k])=>s[k]?`<p><b>${l}</b>${rich(s[k])}</p>`:'').join('')}</div></div>
+ <h3>Veicolo</h3><div class="grid">${[['Modello','modello'],['Alimentazione','alimentazione'],['Targa','targa']].map(([l,k])=>`<p><b>${l}</b>${rich(a[k])}</p>`).join('')}</div>
+ <h3>Luoghi frequentati</h3><p>${(s.luoghi||[]).map(rich).join(' · ')}</p>
+ <h3>Complici noti</h3><div class="grid">${(s.complici||[]).map(c=>`<p><b>${rich(c.nome)}</b>${rich(c.ruolo)}</p>`).join('')}</div>
+ ${rest.length?'<h3>Dati censurati</h3>':''}<div id="cens">${rest.map(i=>{const c=r.censurati[i];return `<div class="row"><b>${E(c.etichetta)}</b><input data-i="${i}" style="width:${c.len+4}ch" autocomplete="off"></div>`}).join('')}</div>
+ <div id="slots">${'_'.repeat(r.censurati.length).split('').join(' ')}</div>
+ <h3>Capi d'accusa</h3><div id="acc">${r.accuse.map((c,i)=>`<div class="acc" data-i="${i}"><span>${E(c.titolo)}</span><u></u></div>`).join('')}</div>
+ <h3>Dati d'intelligence</h3><div class="row"><input id="ic" placeholder="CODICE" autocomplete="off"><button id="ib">Sblocca</button></div><div id="fr"></div>`;
+ d.querySelectorAll('input[data-i]').forEach(i=>i.onchange=()=>cens(+i.dataset.i,i.value));
+ $('#ib').onclick=()=>unlock($('#ic').value);$('#ic').onkeydown=e=>e.key=='Enter'&&unlock(e.target.value);
+ $('#acc').onclick=e=>{const a=e.target.closest('.acc');if(a)acc(+a.dataset.i)};
+ Object.entries(S.ce).forEach(([i,v])=>cens(+i,v,1));if(S.c2)unlock(S.c2,1)}
+async function cens(i,v,q){const c=R.censurati[i],t=norm(v);if(!t)return;
+ if(await hash(v)!==c.h){if(!q)toast('Non corrisponde a nessun dato in archivio.');return}
+ S.ce[i]=v;save();L[i]=t[c.lettera-1];
+ $(`input[data-i="${i}"]`).replaceWith(Object.assign(document.createElement('span'),{className:'ok',innerHTML:[...t].map((ch,k)=>k==c.lettera-1?`<mark>${ch}</mark>`:ch).join('').toUpperCase()}));
+ $('#slots').textContent=R.censurati.map((_,k)=>(L[k]||'_').toUpperCase()).join(' ')}
+async function unlock(v,q){const r=await dec(R.intel,norm(v));if(!r){if(!q){toast('Codice errato: accesso negato.');addW(1)}return}
+ I=r;S.c2=v;save();document.querySelectorAll('.acc').forEach(a=>a.classList.add('open'));$('#ic').parentNode.hidden=1;toast('Dati d\'intelligence sbloccati.')}
+function acc(i){if(!I)return toast('Troppo facile. Nessuno ti ha dato il permesso di leggere.');
+ if(R.accuse[i].corrotto)return fix();const m=I.media[i],o=document.createElement('div');o.className='ov';
+ o.innerHTML=`<div>${m.tipo=='video'?`<video src="${m.src}" controls autoplay></video>`:`<img src="${m.src}">`}<p><button>Chiudi</button></p></div>`;
+ o.querySelector('button').onclick=()=>o.remove();document.body.append(o)}
+function fix(){const f=$('#fr');f.innerHTML='<h3>LINK CORROTTO · ripara i 4 frammenti</h3>'+I.frammenti.map((x,i)=>`<div class="card" id="f${i}"><h4>Frammento ${i+1} · ${E(x.tipo)}</h4><p>${E(x.testo)}</p><div class="row"><input data-f="${i}" autocomplete="off"><button data-f="${i}">Ripara</button></div></div>`).join('');
+ f.querySelectorAll('button').forEach(b=>b.onclick=()=>chk(+b.dataset.f,f.querySelector(`input[data-f="${b.dataset.f}"]`).value));
+ f.querySelectorAll('input').forEach(n=>n.onkeydown=e=>e.key=='Enter'&&chk(+n.dataset.f,n.value));
+ Object.entries(S.fr).forEach(([i,v])=>chk(+i,v,1));f.scrollIntoView({behavior:'smooth'})}
+async function chk(i,v,q){if(!norm(v))return;if(await hash(v)!==I.frammenti[i].h){if(!q)toast('Frammento non valido.');return}
+ S.fr[i]=v;save();okF[i]=1;const c=$('#f'+i);c.classList.add('done');c.querySelector('.row').innerHTML='<span class="ok">RIPARATO</span>';
+ if(okF.filter(Boolean).length==I.frammenti.length)end()}
+async function end(){const x=await dec(I.finale,I.frammenti.map((_,i)=>norm(S.fr[i])).join('|'));if(!x)return toast('Qualcosa non torna: ricontrolla i frammenti.');
+ const o=document.createElement('div');o.className='ov';o.innerHTML='<div><div class="big" style="color:#fff">VERIFICA IN CORSO…</div><div class="bar"><div></div></div></div>';document.body.append(o);
+ setTimeout(()=>o.querySelector('.bar div').style.width='100%',50);
+ setTimeout(()=>{o.innerHTML=`<div><div class="big">ACCESSO CONSENTITO</div><p>Prova n. 1 pronta alla visione.</p><button id="go">Riproduci prova</button><p style="color:var(--c)">${E(x.ps)}</p></div>`;
+  $('#go').onclick=()=>window.open(x.url,'_blank','noopener')},3300)}
+$('#gb').onclick=()=>openGate($('#gi').value);$('#gi').onkeydown=e=>e.key=='Enter'&&openGate(e.target.value);
+stars();fetch('pacchetto.json').then(r=>r.json()).then(async p=>{P=p;try{S={...S,...JSON.parse(localStorage.getItem('fasc')||'{}')}}catch(e){}
+ if(S.c1)await openGate(S.c1,1)}).catch(()=>{$('#err').textContent='Impossibile caricare i dati: apri la pagina da un server (https o localhost), non dal file.'});
+</script>
+</html>
