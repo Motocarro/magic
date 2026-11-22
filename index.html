@@ -42,12 +42,13 @@ const $=s=>document.querySelector(s),E=s=>String(s??'').replace(/[&<>]/g,c=>({'&
 const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const gate=s=>norm(s).replace(/^(prova)?n?(?=\d)/,'');
 const EASY=['0000','1234','12345','cross','magic','motocarro','password','16','admin','formula1','f1','harrypotter','prova'];
-const u8=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
-async function dec(b,p){try{const k0=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveKey']);
- const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:u8(b.s),iterations:200000,hash:'SHA-256'},k0,{name:'AES-GCM',length:256},false,['decrypt']);
- return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u8(b.i)},k,u8(b.c))))}catch(e){return null}}
+const u8=async b=>new Uint8Array(await(await fetch('data:;base64,'+b)).arrayBuffer());
+async function decRaw(b,p){try{const k0=await crypto.subtle.importKey('raw',new TextEncoder().encode(p),'PBKDF2',false,['deriveKey']);
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:await u8(b.s),iterations:200000,hash:'SHA-256'},k0,{name:'AES-GCM',length:256},false,['decrypt']);
+ return await crypto.subtle.decrypt({name:'AES-GCM',iv:await u8(b.i)},k,await u8(b.c))}catch(e){return null}}
+async function dec(b,p){const r=await decRaw(b,p);try{return r&&JSON.parse(new TextDecoder().decode(r))}catch(e){return null}}
 async function hash(s){const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('v1:'+norm(s)));return[...new Uint8Array(d)].map(x=>x.toString(16).padStart(2,'0')).join('')}
-let P,R,I,W=0,S={c1:'',c2:'',ce:{},fr:{}},L=[],okF=[];
+let P,R,I,K2,W=0,S={c1:'',c2:'',ce:{},fr:{}},L=[],okF=[];
 const save=()=>{try{localStorage.setItem('fasc',JSON.stringify(S))}catch(e){}};
 const toast=t=>{const m=$('#msg');m.textContent=t;m.classList.add('s');clearTimeout(m.t);m.t=setTimeout(()=>m.classList.remove('s'),3200)};
 const stars=()=>$('#st').innerHTML=[...Array(6)].map((_,i)=>`<i class="${i<W?'on':''}">★</i>`).join('');
@@ -80,12 +81,15 @@ async function cens(i,v,q){const c=R.censurati[i],t=norm(v);if(!t)return;
  S.ce[i]=v;save();L[i]=t[c.lettera-1];
  $(`input[data-i="${i}"]`).replaceWith(Object.assign(document.createElement('span'),{className:'ok',innerHTML:[...t].map((ch,k)=>k==c.lettera-1?`<mark>${ch}</mark>`:ch).join('').toUpperCase()}));
  $('#slots').textContent=R.censurati.map((_,k)=>(L[k]||'_').toUpperCase()).join(' ')}
-async function unlock(v,q){const r=await dec(R.intel,norm(v));if(!r){if(!q){toast('Codice errato: accesso negato.');addW(1)}return}
- I=r;S.c2=v;save();document.querySelectorAll('.acc').forEach(a=>a.classList.add('open'));$('#ic').parentNode.hidden=1;toast('Dati d\'intelligence sbloccati.')}
-function acc(i){if(!I)return toast('Troppo facile. Nessuno ti ha dato il permesso di leggere.');
- if(R.accuse[i].corrotto)return fix();const m=I.media[i],o=document.createElement('div');o.className='ov';
- o.innerHTML=`<div>${m.tipo=='video'?`<video src="${m.src}" controls autoplay></video>`:`<img src="${m.src}">`}<p><button>Chiudi</button></p></div>`;
- o.querySelector('button').onclick=()=>o.remove();document.body.append(o)}
+async function unlock(v,q){let b;try{b=await(await fetch('intel.json')).json()}catch(e){toast('Impossibile caricare intel.json');return}const r=await dec(b,norm(v));if(!r){if(!q){toast('Codice errato: accesso negato.');addW(1)}return}
+ I=r;K2=norm(v);S.c2=v;save();document.querySelectorAll('.acc').forEach(a=>a.classList.add('open'));$('#ic').parentNode.hidden=1;toast('Dati d\'intelligence sbloccati.')}
+async function acc(i){if(!I)return toast('Troppo facile. Nessuno ti ha dato il permesso di leggere.');
+ if(R.accuse[i].corrotto)return fix();toast('Decifrazione in corso…');
+ let b;try{b=await(await fetch(`m${i}.json`)).json()}catch(e){return toast('File non trovato: manca m'+i+'.json')}
+ const raw=await decRaw(b,K2);if(!raw)return toast('File illeggibile.');
+ const src=URL.createObjectURL(new Blob([raw],{type:b.t})),o=document.createElement('div');o.className='ov';
+ o.innerHTML=`<div>${b.t.startsWith('video')?`<video src="${src}" controls autoplay></video>`:`<img src="${src}">`}<p><button>Chiudi</button></p></div>`;
+ o.querySelector('button').onclick=()=>{o.remove();URL.revokeObjectURL(src)};document.body.append(o)}
 function fix(){const f=$('#fr');f.innerHTML='<h3>LINK CORROTTO · ripara i 4 frammenti</h3>'+I.frammenti.map((x,i)=>`<div class="card" id="f${i}"><h4>Frammento ${i+1} · ${E(x.tipo)}</h4><p>${E(x.testo)}</p><div class="row"><input data-f="${i}" autocomplete="off"><button data-f="${i}">Ripara</button></div></div>`).join('');
  f.querySelectorAll('button').forEach(b=>b.onclick=()=>chk(+b.dataset.f,f.querySelector(`input[data-f="${b.dataset.f}"]`).value));
  f.querySelectorAll('input').forEach(n=>n.onkeydown=e=>e.key=='Enter'&&chk(+n.dataset.f,n.value));
